@@ -461,7 +461,6 @@ def simulate(ai1,ai2,n):
 	blueScoreList = []
 	gameMoveCounter = 0
 	for i in range(int(n)):
-		gameMovesList.append(gameMoveCounter)
 		gameMoveCounter = 0
 		stratego = Stratego(ai1,ai2)
 		stratego.placePieces('red', True)
@@ -473,6 +472,7 @@ def simulate(ai1,ai2,n):
 
 		while True:
 			if gameMoveCounter > 500:
+				gameMovesList.append(gameMoveCounter)
 				ties += 1
 				break
 			gameMoveCounter += 1 
@@ -482,16 +482,19 @@ def simulate(ai1,ai2,n):
 			flag = stratego.simGameOver()
 			if flag == 1:
 				#red wins
+				gameMovesList.append(gameMoveCounter)
 				redScoreList.append(calcEndingScore(stratego, 'blue'))
 				redWins += 1
 				break
 			if flag == 2:
 				#blue wins
+				gameMovesList.append(gameMoveCounter)
 				blueScoreList.append(calcEndingScore(stratego, 'red'))
 				blueWins += 1
 				break
 			if flag == 3:
 				#tie
+				gameMovesList.append(gameMoveCounter)
 				ties += 1
 				break
 				
@@ -502,19 +505,22 @@ def simulate(ai1,ai2,n):
 			flag = stratego.simGameOver()
 			if flag == 1:
 				#red wins
+				gameMovesList.append(gameMoveCounter)
 				redScoreList.append(calcEndingScore(stratego, 'blue'))
 				redWins += 1
 				break
 			if flag == 2:
 				#blue wins
+				gameMovesList.append(gameMoveCounter)
 				blueScoreList.append(calcEndingScore(stratego, 'red'))
 				blueWins += 1
 				break
 			if flag == 3:
 				#tie
+				gameMovesList.append(gameMoveCounter)
 				ties += 1
 				break
-
+	
 	print ("Simulations Over.")
 	print ("Red Wins (%s): %s" % (ai1, redWins))
 	print ("Blue Wins (%s): %s" % (ai2, blueWins))

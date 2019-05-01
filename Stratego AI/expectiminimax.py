@@ -6,14 +6,6 @@ class Expectiminimax(Player):
     def __init__(self, team, board):
         Player.__init__(self, team, board)
 
-    # def getMove(self):
-    #     best_move = None
-    #         best_move_val = -float('inf')
-    #         for child in gamestate.children:
-    #             if self.evaluate_state(child, self.depth) > best_move_val:
-    #                 best_move = child
-    #         return best_move.action
-
     def getMove(self):
         board = self.getCurrentBoard()
         newBoard = self.relaxBoard(board)

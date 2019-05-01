@@ -1,10 +1,11 @@
 from pieces import *
 from player import *
 import random
-from AI import *
+import sys
+from Ai import *
 
 class Stratego:
-	def __init__(self):
+	def __init__(self, ai1, ai2):
 		self.board = []
 		self.columns = {'a':0, 'b':1, 'c':2, 'd':3, 'e':4, 'f':5, 'g':6, 'h':7}
 		for i in range(8):
@@ -20,13 +21,20 @@ class Stratego:
 
 		###Change these to have human player, random player, or AI
 		#self.redPlayer = Player('red', self.getBoard())
-		#self.redPlayer = Random('red', self.getBoard())
-		self.redPlayer = AI('red', self.getBoard())
+		# self.redPlayer = Random('red', self.getBoard())
+
+		if ai1 == "Random":
+			self.redPlayer = Random('red', self.getBoard())
+		else:
+			self.redPlayer = eval("%s.%s('red', self.getBoard())" % (ai1,ai1))
 		redPlayer = self.getPlayer('red')
 		
 		#self.bluePlayer = Player('blue', self.getBoard())
-		#self.bluePlayer = Random('blue', self.getBoard())
-		self.bluePlayer = Random('blue', self.getBoard())
+		# self.bluePlayer = Random('blue', self.getBoard())
+		if ai2 == "Random":
+			self.bluePlayer = Random('blue', self.getBoard())
+		else:
+			self.bluePlayer = eval("%s.%s('red', self.getBoard())" % (ai2,ai2))
 		bluePlayer = self.getPlayer('blue')
 		
 
@@ -444,34 +452,42 @@ class Stratego:
 			return 2		
 			
 
-
-
-def simulate(n):
-	#simulates n games between a random player and our AI
-	#red player is our AI, blue player is random
+def simulate(ai1,ai2,n):
 	redWins = 0
 	blueWins = 0
 	ties = 0
-
-	for i in range(n):
-		stratego = Stratego()
+	gameMovesList = []
+	redScoreList = []
+	blueScoreList = []
+	gameMoveCounter = 0
+	for i in range(int(n)):
+		gameMovesList.append(gameMoveCounter)
+		gameMoveCounter = 0
+		stratego = Stratego(ai1,ai2)
 		stratego.placePieces('red', True)
 		stratego.placePieces('blue', True)
 		stratego.redPlayer.setMusicalChairs()
 		stratego.bluePlayer.setMusicalChairs()
-		stratego.printGame()
+		# stratego.printGame()
+		print ("Game %s started" % i)
 
 		while True:
+			if gameMoveCounter > 500:
+				ties += 1
+				break
+			gameMoveCounter += 1 
 			move = stratego.redPlayer.getMove()
 			stratego.movePiece(move, stratego.getBoard())
 
 			flag = stratego.simGameOver()
 			if flag == 1:
 				#red wins
+				redScoreList.append(calcEndingScore(stratego, 'blue'))
 				redWins += 1
 				break
 			if flag == 2:
 				#blue wins
+				blueScoreList.append(calcEndingScore(stratego, 'red'))
 				blueWins += 1
 				break
 			if flag == 3:
@@ -479,16 +495,19 @@ def simulate(n):
 				ties += 1
 				break
 				
+			gameMoveCounter +=1
 			move = stratego.bluePlayer.getMove()
 			stratego.movePiece(move, stratego.getBoard())
 
 			flag = stratego.simGameOver()
 			if flag == 1:
 				#red wins
+				redScoreList.append(calcEndingScore(stratego, 'blue'))
 				redWins += 1
 				break
 			if flag == 2:
 				#blue wins
+				blueScoreList.append(calcEndingScore(stratego, 'red'))
 				blueWins += 1
 				break
 			if flag == 3:
@@ -496,11 +515,22 @@ def simulate(n):
 				ties += 1
 				break
 
-	print "Simulation Over."
-	print "Red Wins (AI): {}".format(redWins)
-	print "Blue Wins (Random): {}".format(blueWins)
-	print "Ties: {}".format(ties)
+	print ("Simulations Over.")
+	print ("Red Wins (%s): %s" % (ai1, redWins))
+	print ("Blue Wins (%s): %s" % (ai2, blueWins))
+	print ("Ties: %s" % (ties))
+	print ("Average Turns Per Game: %s" % (sum(gameMovesList)/int(n)))
+	print ("Average Score Per Win Red: %s" % (sum(redScoreList)/(redWins if redWins != 0 else 1)))
+	print ("Average Score Per Win Blue: %s" % (sum(blueScoreList)/(blueWins if blueWins != 0 else 1)))
 	return 0
+
+def calcEndingScore(stratego, color):
+	grave = stratego.getGraveyard(color)
+	score = 0
+	for i in range(10):
+		if ( grave[i].getRank() != -1 ):
+			score += grave[i].getRank()
+	return score
 
 
 def simOneGame():
@@ -554,7 +584,23 @@ def simOneGame():
 
 
 #simulates given number of games between the AI and random player
-simulate(20)
+
+try:
+	ai1 = sys.argv[1]
+except IndexError:
+	ai1 = "AI"
+
+try:
+	ai2 = sys.argv[2]
+except IndexError:
+	ai2 = "AITwo"
+
+try:
+	runs = sys.argv[3]
+except IndexError:
+	runs = "1"
+
+simulate(ai1, ai2, runs)
 
 #simulates one game between the AI and random player showing every move
 #simOneGame()

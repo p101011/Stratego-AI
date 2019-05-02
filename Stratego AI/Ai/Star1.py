@@ -13,4 +13,3 @@ class MonteCarloTreeSearch(Player):
         if depth == 0 or self.isTerminal(state):
             return self.boardEvaluator(state)
 
-        

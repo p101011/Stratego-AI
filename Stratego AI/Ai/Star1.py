@@ -15,17 +15,29 @@ class Star1(Player):
         bestMove = None
         for start in successors:
             for end in successors[start]:
-                print "evaluating " + str(start) + " " + str(end)
-                newBoard = self.getNewState(start, end, newBoard)
-                print "got state"
-                value = self.star1(newBoard, 3, float('-inf'), float('inf'), 'min')
+                succ_board = self.getNewStates(start, end, newBoard)
+                value = self.expectiminimax(succ_board, 3, 'min', float('-inf'), float('inf'))
                 if value > maximum:
                     maximum = value
                     bestMove = (start, end)
         return bestMove
 
+    def expectiminimax(self, boards, depth, node_type, alpha, beta):
+        if depth == 0:
+            return self.boardEvaluator(boards[0][0])
+        if len(boards) > 1:  # there is an uncertainty here
+            best = 0
+            for board, probability in boards:
+                best += probability * self.star1(board, depth, alpha, beta, node_type)
+            return best
+        elif self.isTerminal(boards[0][0]):
+            return self.boardEvaluator(boards[0])
+        elif node_type == 'max':
+            return self.maxValue(boards[0][0], alpha, beta, depth)
+        else:
+            return self.minValue(boards[0][0], alpha, beta, depth)
+
     def star1(self, state, depth, alpha, beta, node_type):
-        print "inside star, depth is " + str(depth)
         if depth <= 0 or self.isTerminal(state):
             return self.boardEvaluator(state)
 
@@ -35,15 +47,14 @@ class Star1(Player):
         vsum = 0
         for start in successors:
             for end in successors[start]:
-                option = self.getNewState(start, end, state)
+                options = self.getNewStates(start, end, state)
+                v = sum([self.boardEvaluator(x[0]) for x in options]) / len(options)
                 ax = max(A, self.lower_bound)
                 bx = min(B, self.upper_bound)
                 if node_type == 'max':
-                    print "calling max with -1 + " + str(depth)
-                    v = self.maxValue(option, ax, bx, depth)
+                    v = max(v, ax, bx)
                 else:
-                    print "calling min with -1 + " + str(depth)
-                    v = self.minValue(option, ax, bx, depth)
+                    v = min(v, ax, bx)
                 if not v > A:
                     return A
                 if not v < B:
@@ -59,8 +70,8 @@ class Star1(Player):
         br = False
         for start in successors:
             for end in successors[start]:
-                newBoard = self.getNewState(start, end, board)
-                childVal = self.star1(newBoard, depth - 1, bestVal, beta, 'min')
+                newBoard = self.getNewStates(start, end, board)
+                childVal = self.expectiminimax(newBoard, depth - 1, 'min', bestVal, beta)
                 bestVal = max(childVal, bestVal)
                 if beta <= bestVal:
                     br = True
@@ -81,8 +92,8 @@ class Star1(Player):
         bestVal = beta
         for start in successors:
             for end in successors[start]:
-                newBoard = self.getNewState(start, end, board)
-                childVal = self.star1(newBoard, depth - 1, alpha, bestVal, 'max')
+                newBoard = self.getNewStates(start, end, board)
+                childVal = self.expectiminimax(newBoard, depth - 1, 'max', alpha, bestVal)
                 bestVal = min(childVal, bestVal)
                 if bestVal <= alpha:
                     br = True
@@ -295,35 +306,53 @@ class Star1(Player):
 
         return moves
 
-    def getNewState(self, start, end, board):
+    def getNewStates(self, start, end, board):
         # returns a new board after the given move was made
-        newBoard = []
-        for row in range(8):
-            newBoard.append([])
-            for col in range(8):
-                newBoard[row].append(board[row][col])
+        newBoards = []
 
-        myPiece = newBoard[start[0]][start[1]]
-        myRank, myTeam = self.getInfo(myPiece)
+        enemyPiece = board[end[0]][end[1]]
+        if enemyPiece is not None:
+            possibilities = get_possibilities()
+            for possibility, probability in possibilities:
+                new_board = []
 
-        enemyPiece = newBoard[end[0]][end[1]]
-        if not enemyPiece is None:
-            enemyRank, enemyTeam = self.getInfo(enemyPiece)
+                for row in range(8):
+                    new_board.append([])
+                    for col in range(8):
+                        new_board[row].append(board[row][col])
 
-        newBoard[start[0]][start[1]] = None
-        if enemyPiece is None:
-            newBoard[end[0]][end[1]] = myPiece
-        elif enemyRank < myRank:
-            # win
-            newBoard[end[0]][end[1]] = myPiece
-        elif enemyRank == myRank:
-            # tie
-            newBoard[end[0]][end[1]] = None
+                myPiece = new_board[start[0]][start[1]]
+                myRank, myTeam = self.getInfo(myPiece)
+
+                new_board[start[0]][start[1]] = None
+                if enemyPiece is None:
+                    new_board[end[0]][end[1]] = myPiece
+                elif possibility < myRank:
+                    # win
+                    new_board[end[0]][end[1]] = myPiece
+                elif possibility == myRank:
+                    # tie
+                    new_board[end[0]][end[1]] = None
+                else:
+                    # lost
+                    pass
+
+                newBoards.append((new_board, probability))
         else:
-            # lost
-            pass
+            new_board = []
+            probability = 1.0
 
-        return newBoard
+            for row in range(8):
+                new_board.append([])
+                for col in range(8):
+                    new_board[row].append(board[row][col])
+
+            myPiece = new_board[start[0]][start[1]]
+            new_board[start[0]][start[1]] = None
+            new_board[end[0]][end[1]] = myPiece
+            newBoards.append((new_board, probability))
+
+        return newBoards
 
     def getInfo(self, piece):
         # returns the rank of the piece and its teamID
@@ -338,3 +367,11 @@ class Star1(Player):
             rank = int(piece[0])
             teamID = piece[1]
         return rank, teamID
+
+
+def get_possibilities():
+    output = []
+    dummy = ProbabilityDistribution()
+    for rank in dummy.ranks.keys():
+        output.append((dummy.ranks[rank], dummy.distribution[rank] / dummy.activePieces))
+    return output

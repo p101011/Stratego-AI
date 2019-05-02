@@ -594,12 +594,12 @@ def simOneGame():
 try:
 	ai1 = sys.argv[1]
 except IndexError:
-	ai1 = "AI"
+	ai1 = "Random"
 
 try:
 	ai2 = sys.argv[2]
 except IndexError:
-	ai2 = "AITwo"
+	ai2 = "Star2"
 
 try:
 	runs = sys.argv[3]

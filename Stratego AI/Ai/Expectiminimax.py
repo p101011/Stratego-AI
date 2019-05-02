@@ -49,7 +49,7 @@ class Expectiminimax(Player):
         if len(boards) > 1:  # there is an uncertainty here
             best = 0
             for board, probability in boards:
-                best += probability * self.expectiminimax([(board, probability)], depth - 1, node_type, alpha, beta)
+                best += probability * self.expectiminimax([(board, probability)], depth, node_type, alpha, beta)
             return best
         elif self.isTerminal(boards[0][0]):
             return self.boardEvaluator(boards[0])
@@ -342,11 +342,8 @@ class Expectiminimax(Player):
             rank = int(piece[0] + piece[1])
             teamID = piece[2]
         else:
-            try:
-                rank = int(piece[0])
-                teamID = piece[1]
-            except:
-                x = 3
+            rank = int(piece[0])
+            teamID = piece[1]
         return rank, teamID
 
 

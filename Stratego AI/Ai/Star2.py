@@ -434,5 +434,7 @@ def get_possibilities():
     output = []
     dummy = ProbabilityDistribution()
     for rank in dummy.ranks.keys():
-        output.append((dummy.ranks[rank], dummy.distribution[rank] / dummy.activePieces))
+        probability = dummy.distribution[rank] / float(dummy.activePieces) > 0
+        if probability > 0:
+            output.append((dummy.ranks[rank], probability))
     return output

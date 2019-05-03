@@ -1,10 +1,14 @@
 from player import *
 from pieces import *
+from random import choice, sample
 
 
 class MonteCarloTreeSearch(Player):
     def __init__(self, team, board):
         Player.__init__(self, team, board)
+        self.upper_bound = 2150  # derived from eval functions
+        self.lower_bound = 0
+        self.sample_resolution = 5
 
     def getMove(self):
         newBoard = self.relaxBoard(self.board)
@@ -13,69 +17,84 @@ class MonteCarloTreeSearch(Player):
         bestMove = None
         for start in successors:
             for end in successors[start]:
-                newBoard = self.getNewState(start, end, newBoard)
-                value = self.expectiminimax(newBoard, float('-inf'), float('inf'))
+                succ_board = self.getNewStates(start, end, newBoard)
+                value = self.expectiminimax(succ_board, 3, 'max', float('-inf'), float('inf'), False)
                 if value > maximum:
                     maximum = value
                     bestMove = (start, end)
         return bestMove
 
-    def expectiminimax(self, boards, depth, node_type, alpha, beta):
+    def expectiminimax(self, boards, depth, node_type, alpha, beta, consider_subset):
         if depth == 0:
-            return self.boardEvaluator(boards[0])
+            return self.boardEvaluator(boards[0][0])
+
         if len(boards) > 1:  # there is an uncertainty here
             best = 0
             for board, probability in boards:
-                best += probability * self.star2(board, alpha, beta)
+                board_actions = self.generateAllMoves(board, self.getTeam()[0])
+                if not consider_subset:
+                    for start in board_actions:
+                        for end in board_actions[start]:
+                            best += probability * self.star2ss(board, (start, end), depth, alpha, beta, node_type)
+                else:
+                    action = (board_actions[0], board_actions[0][0])
+                    best += probability * self.star2ss(board, action, depth, alpha, beta, node_type)
             return best
         elif self.isTerminal(boards[0][0]):
-            return self.boardEvaluator(boards[0])
+            return self.boardEvaluator(boards[0][0])
         elif node_type == 'max':
-            return self.maxValue(boards[0], alpha, beta, depth)
+            return self.maxValue(boards[0][0], alpha, beta, depth)
         else:
-            return self.minValue(boards[0], alpha, beta, depth)
+            return self.minValue(boards[0][0], alpha, beta, depth)
 
-    def star2(self, state, alpha, beta):
-        if self.isTerminal(state):
+    def star2ss(self, state, action, depth, alpha, beta, to_play):
+        if self.isTerminal(state) or depth == 0:
             return self.boardEvaluator(state)
 
-        actions = self.generateAllMoves(state, self.getTeam()[0])
-        successors = []
-        for start in actions:
-            for end in actions[start]:
-                successors.append(self.getNewState(start, end, state))
-        A = len(successors) * (alpha - self.upper_bound) + self.upper_bound
-        B = len(successors) * (beta - self.lower_bound) + self.lower_bound
-        bx = min(B, self.upper_bound)
-        w = []
+        outcomes = self.getNewStates(action[0], action[1], state)
+        opti = alpha
+        pess = beta
 
-        for child in successors:
-            A = A + self.upper_bound
-            ax = max(A, self.lower_bound)
-            found_value = self.probe(child, ax, bx)
-            w.append(found_value)
-            if found_value <= A:
-                return alpha
-            A -= found_value
+        for o, p in outcomes:
+            ov = self.boardEvaluator(o) * p
+            opti = max(opti, ov)
+            pess = min(pess, ov)
+
+        for outcome, probability in outcomes:
+            alpha_mod = (alpha - opti + (probability * self.boardEvaluator(outcome))) / probability
+            ap = max(self.lower_bound, alpha_mod)
+            beta_mod = (beta - pess + (probability * self.boardEvaluator(outcome))) / probability
+            bp = min(self.upper_bound, beta_mod)
+            v = self.expectiminimax([(outcome, probability)], depth - 1, to_play, ap, bp, True)
+            if to_play == 'max':
+                pess = min(v * probability, pess)
+                if pess >= beta:
+                    return pess
+            else:
+                opti = max(v * probability, opti)
+                if opti <= alpha:
+                    return opti
 
         vsum = 0
-        for child, probe in zip(successors, w):
-            B = B + self.lower_bound
-            A = A + probe
-            ax = max(A, self.lower_bound)
-            bx = min(B, self.upper_bound)
-            v = min(child, ax, bx)
-            if v <= A:
-                return alpha
-            if v >= B:
-                return beta
+
+        for outcome, probability in outcomes:
+            alpha_mod = (alpha - opti + (probability * self.boardEvaluator(outcome))) / probability
+            ap = max(self.lower_bound, alpha_mod)
+            beta_mod = (beta - pess + (probability * self.boardEvaluator(outcome))) / probability
+            bp = min(self.upper_bound, beta_mod)
+            v = self.expectiminimax([(outcome, probability)], depth - 1, to_play, ap, bp, False)
+            opti = max(v * probability, opti)
+            pess = min(v * probability, pess)
+            if v >= bp:
+                return pess
+            if v <= ap:
+                return opti
             vsum += v
-            A = A - v
-            B = B - v
-        if len(successors) == 0:
+
+        if len(outcomes) == 0:
             return self.boardEvaluator(state)
 
-        return vsum / len(successors)
+        return vsum / len(outcomes)
 
     def maxValue(self, board, alpha, beta, depth):
         successors = self.generateAllMoves(board, self.getTeam()[0])
@@ -84,7 +103,7 @@ class MonteCarloTreeSearch(Player):
         for start in successors:
             for end in successors[start]:
                 newBoard = self.getNewState(start, end, board)
-                childVal = self.star1(newBoard, depth - 1, bestVal, beta, 'min')
+                childVal = self.star2ss(newBoard, (start, end), depth - 1, bestVal, beta, 'min')
                 bestVal = max(childVal, bestVal)
                 if beta <= bestVal:
                     br = True
@@ -106,7 +125,7 @@ class MonteCarloTreeSearch(Player):
         for start in successors:
             for end in successors[start]:
                 newBoard = self.getNewState(start, end, board)
-                childVal = self.star1(newBoard, depth - 1, alpha, bestVal, 'max')
+                childVal = self.star2ss(newBoard, (start, end), depth - 1, alpha, bestVal, 'max')
                 bestVal = min(childVal, bestVal)
                 if bestVal <= alpha:
                     br = True
@@ -364,6 +383,53 @@ class MonteCarloTreeSearch(Player):
 
         return newBoard
 
+    def getNewStates(self, start, end, board):
+        # returns a new board after the given move was made
+        newBoards = []
+
+        enemyPiece = board[end[0]][end[1]]
+        if enemyPiece is not None:
+            possibilities = self.get_possibilities()
+            for possibility, probability in possibilities:
+                new_board = []
+
+                for row in range(8):
+                    new_board.append([])
+                    for col in range(8):
+                        new_board[row].append(board[row][col])
+
+                myPiece = new_board[start[0]][start[1]]
+                myRank, myTeam = self.getInfo(myPiece)
+
+                new_board[start[0]][start[1]] = None
+                if enemyPiece is None:
+                    new_board[end[0]][end[1]] = myPiece
+                elif possibility < myRank:
+                    # win
+                    new_board[end[0]][end[1]] = myPiece
+                elif possibility == myRank:
+                    # tie
+                    new_board[end[0]][end[1]] = None
+                else:
+                    # lost
+                    pass
+
+                newBoards.append((new_board, probability))
+        else:
+            new_board = []
+            probability = 1.0
+
+            for row in range(8):
+                new_board.append([])
+                for col in range(8):
+                    new_board[row].append(board[row][col])
+
+            myPiece = new_board[start[0]][start[1]]
+            new_board[start[0]][start[1]] = None
+            new_board[end[0]][end[1]] = myPiece
+            newBoards.append((new_board, probability))
+        return newBoards
+
     def getInfo(self, piece):
         # returns the rank of the piece and its teamID
         # format of piece is '9b', '11r', etc.
@@ -377,3 +443,10 @@ class MonteCarloTreeSearch(Player):
             rank = int(piece[0])
             teamID = piece[1]
         return rank, teamID
+
+    def get_possibilities(self):
+        output = []
+        dummy = ProbabilityDistribution()
+        for rank in sample(dummy.ranks.keys(), self.sample_resolution):
+            output.append((dummy.ranks[rank], 1.0 / self.sample_resolution))
+        return output

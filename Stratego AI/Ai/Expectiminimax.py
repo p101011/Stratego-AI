@@ -37,7 +37,7 @@ class Expectiminimax(Player):
         for start in successors:
             for end in successors[start]:
                 newBoards = self.getNewStates(start, end, board)
-                value = self.expectiminimax(newBoards, 3, 'min', float('-inf'), float('inf'))
+                value = self.expectiminimax(newBoards, 3, 'max', float('-inf'), float('inf'))
                 if value > maximum:
                     maximum = value
                     bestMove = (start, end)
@@ -52,7 +52,7 @@ class Expectiminimax(Player):
                 best += probability * self.expectiminimax([(board, probability)], depth, node_type, alpha, beta)
             return best
         elif self.isTerminal(boards[0][0]):
-            return self.boardEvaluator(boards[0])
+            return self.boardEvaluator(boards[0][0])
         elif node_type == 'max':
             return self.maxValue(boards[0], alpha, beta, depth)
         else:
@@ -351,5 +351,7 @@ def get_possibilities():
     output = []
     dummy = ProbabilityDistribution()
     for rank in dummy.ranks.keys():
-        output.append((dummy.ranks[rank], dummy.distribution[rank] / dummy.activePieces))
+        probability = dummy.distribution[rank] / float(dummy.activePieces) > 0
+        if probability > 0:
+            output.append((dummy.ranks[rank], probability))
     return output

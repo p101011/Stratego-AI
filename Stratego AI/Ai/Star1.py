@@ -5,7 +5,7 @@ from pieces import *
 class Star1(Player):
     def __init__(self, team, board):
         Player.__init__(self, team, board)
-        self.upper_bound = 2150  # derived from eval functions
+        self.upper_bound = 215000  # derived from eval functions
         self.lower_bound = 0
 
     def getMove(self):
@@ -192,7 +192,7 @@ class Star1(Player):
         return advance
 
     def boardEvaluator(self, board):
-        endgame = self.evaluateBoard1(board) * 10  # max is 100
+        endgame = self.evaluateBoard1(board) * 1000  # max is 10000
         pieces = self.evaluateBoard2(board) * 1  # max is 10
         advance = self.evaluateBoard3(board) * 10  # max is 2040
 

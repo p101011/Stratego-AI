@@ -33,7 +33,7 @@ class Stratego:
 		if ai2 == "Random":
 			self.bluePlayer = Random('blue', self.getBoard())
 		else:
-			self.bluePlayer = eval("%s.%s('red', self.getBoard())" % (ai2,ai2))
+			self.bluePlayer = eval("%s.%s('blue', self.getBoard())" % (ai2,ai2))
 		bluePlayer = self.getPlayer('blue')
 		
 
@@ -532,8 +532,9 @@ def simulate(ai1,ai2,n):
 	print ("Average Turns Per Game: %s" % (averageTurns))
 	print ("Average Score Per Win Red: %s" % (averageScoreRed))
 	print ("Average Score Per Win Blue: %s" % (averageScoreBlue))
-	print ('=SPLIT("%s, %s, %s, %s, %s, %s, %s, %s", ",")' % (ai1,ai2,redWins,blueWins,ties,averageTurns,averageScoreRed,averageScoreBlue))
-
+	file = open('results.txt', 'a')
+	file.write('=SPLIT("%s, %s, %s, %s, %s, %s, %s, %s", ",")\n' % (ai1,ai2,redWins,blueWins,ties,averageTurns,averageScoreRed,averageScoreBlue))
+	file.close()
 	return 0
 
 def calcEndingScore(stratego, color):

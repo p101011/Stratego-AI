@@ -170,7 +170,7 @@ class Expectiminimax(Player):
         return advance
 
     def boardEvaluator(self, board):
-        endgame = self.evaluateBoard1(board[0]) * 10
+        endgame = self.evaluateBoard1(board[0]) * 1000
         pieces = self.evaluateBoard2(board[0]) * 1
         advance = self.evaluateBoard3(board[0]) * 10
 

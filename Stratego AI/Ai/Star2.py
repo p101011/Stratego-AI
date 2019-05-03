@@ -17,7 +17,7 @@ class Star2(Player):
         for start in successors:
             for end in successors[start]:
                 succ_board = self.getNewStates(start, end, newBoard)
-                value = self.expectiminimax(succ_board, 3, 'min', float('-inf'), float('inf'))
+                value = self.expectiminimax(succ_board, 3, 'min', self.lower_bound, self.upper_bound)
                 if value > maximum:
                     maximum = value
                     bestMove = (start, end)
@@ -32,7 +32,7 @@ class Star2(Player):
                 best += probability * self.star2(board, alpha, beta)
             return best
         elif self.isTerminal(boards[0][0]):
-            return self.boardEvaluator(boards[0])
+            return self.boardEvaluator(boards[0][0])
         elif node_type == 'max':
             return self.maxValue(boards[0][0], alpha, beta, depth)
         else:

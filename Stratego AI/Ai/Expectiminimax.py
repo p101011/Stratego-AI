@@ -52,7 +52,7 @@ class Expectiminimax(Player):
                 best += probability * self.expectiminimax([(board, probability)], depth, node_type, alpha, beta)
             return best
         elif self.isTerminal(boards[0][0]):
-            return self.boardEvaluator(boards[0][0])
+            return self.boardEvaluator(boards[0])
         elif node_type == 'max':
             return self.maxValue(boards[0], alpha, beta, depth)
         else:

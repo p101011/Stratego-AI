@@ -17,7 +17,6 @@ class Stratego:
 		self.blueGraveyard = []
 		self.populateGraveyard(self.redGraveyard, 'red')
 		self.populateGraveyard(self.blueGraveyard, 'blue')
-		
 
 		###Change these to have human player, random player, or AI
 		#self.redPlayer = Player('red', self.getBoard())
@@ -65,6 +64,8 @@ class Stratego:
 
 	def updateBoard(self, newBoard):
 		self.board = newBoard
+		self.redPlayer.updateBoard(newBoard)
+		self.bluePlayer.updateBoard(newBoard)
 
 	def printBoard(self):
 		for row in self.board:
@@ -471,7 +472,7 @@ def simulate(ai1,ai2,n):
 		print ("Game %s started" % i)
 
 		while True:
-			if gameMoveCounter > 500:
+			if gameMoveCounter > 1000:
 				gameMovesList.append(gameMoveCounter)
 				ties += 1
 				break
@@ -525,9 +526,14 @@ def simulate(ai1,ai2,n):
 	print ("Red Wins (%s): %s" % (ai1, redWins))
 	print ("Blue Wins (%s): %s" % (ai2, blueWins))
 	print ("Ties: %s" % (ties))
-	print ("Average Turns Per Game: %s" % (sum(gameMovesList)/int(n)))
-	print ("Average Score Per Win Red: %s" % (sum(redScoreList)/(redWins if redWins != 0 else 1)))
-	print ("Average Score Per Win Blue: %s" % (sum(blueScoreList)/(blueWins if blueWins != 0 else 1)))
+	averageTurns = sum(gameMovesList)/int(n)
+	averageScoreRed = sum(redScoreList)/(redWins if redWins != 0 else 1)
+	averageScoreBlue = sum(blueScoreList)/(blueWins if blueWins != 0 else 1)
+	print ("Average Turns Per Game: %s" % (averageTurns))
+	print ("Average Score Per Win Red: %s" % (averageScoreRed))
+	print ("Average Score Per Win Blue: %s" % (averageScoreBlue))
+	print ('=SPLIT("%s, %s, %s, %s, %s, %s, %s, %s", ",")' % (ai1,ai2,redWins,blueWins,ties,averageTurns,averageScoreRed,averageScoreBlue))
+
 	return 0
 
 def calcEndingScore(stratego, color):
@@ -539,8 +545,8 @@ def calcEndingScore(stratego, color):
 	return score
 
 
-def simOneGame():
-	stratego = Stratego()
+def simOneGame(ai1, ai2):
+	stratego = Stratego(ai1,ai2)
 	piece = stratego.blueGraveyard[0]
 	stratego.placePieces('red', True) #True randomizes starting places
 	stratego.placePieces('blue', True)
@@ -560,7 +566,7 @@ def simOneGame():
 				break
 			if move:
 				stratego.movePiece(move, stratego.getBoard())
-				#stratego.printGame()
+				# stratego.printGame()
 				#stratego.showLastMove()
 				break
 
@@ -609,7 +615,7 @@ except IndexError:
 simulate(ai1, ai2, runs)
 
 #simulates one game between the AI and random player showing every move
-#simOneGame()
+# simOneGame(ai1, ai2)
 
 
 
